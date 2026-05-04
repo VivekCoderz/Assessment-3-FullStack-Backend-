@@ -7,6 +7,7 @@ const nodemailer = require("nodemailer");
 const { uploadImage } = require("./config/multer");
 const app = express();
 
+require("dotenv").config()
 
 app.use(express.json());
 
@@ -215,8 +216,9 @@ app.post("/api/users/upload-profile",authMiddleware, uploadImage.single("image")
 });
 
 
-const PORT = 3000;
-mongoose.connect("mongodb+srv://vivekgarg0605:06062005@cluster0.gvtemeh.mongodb.net/assessment-3").then(()=>{
+const PORT = process.env.PORT || 3000;
+mongoose.connect(process.env.db_url).then(()=>{
+    console.log("Database Connected Sucessfully")
     app.listen(PORT,()=>{
         console.log("Server on running on Port ",PORT)
     })
