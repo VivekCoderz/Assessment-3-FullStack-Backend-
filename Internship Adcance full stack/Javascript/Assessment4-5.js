@@ -151,17 +151,21 @@
 // }
  
 // 19.
-// --- stringUtils.js ---
+
+
 // export const capitalize = s => s[0].toUpperCase() + s.slice(1);
-// --- arrayUtils.js ---
+
 // export const uniq = arr => [...new Set(arr)];
-// --- objectUtils.js ---
+
+
 // export const pick = (obj, keys) => Object.fromEntries(keys.map(k => [k, obj[k]]));
-// --- index.js ---
+
+
 // export * from './stringUtils.js';
 // export * from './arrayUtils.js';
 // export * from './objectUtils.js';
-// --- main.js ---
+
+
 // import { capitalize, uniq, pick } from './index.js';
  
 // 20.
