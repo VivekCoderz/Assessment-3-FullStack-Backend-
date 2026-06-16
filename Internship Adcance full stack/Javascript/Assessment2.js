@@ -82,7 +82,125 @@
 
 // 10. Create a private variable using lexical scope. 
 
+function counter() {
+  let count = 0; // Private Variable
 
+  return function () {
+    count++;
+    console.log(count);
+  };
+}
+
+const increment = counter();
+
+increment(); // 1
+increment(); // 2
+increment(); // 3
+
+// 11. 
+function counter() {
+  let count = 0;
+
+  return function () {
+    count++;
+    console.log(count);
+  };
+}
+
+const increment = counter();
+
+increment(); // 1
+increment(); // 2
+increment(); // 3
+
+// 12. 
+function reverseCounter() {
+  let count = 10;
+
+  return function () {
+    console.log(count);
+    count--;
+  };
+}
+
+const decrement = reverseCounter();
+
+decrement(); // 10
+decrement(); // 9
+decrement(); // 8
+
+
+
+//<-----IIFE---->
+//ques21
+// (function fntn(){
+//     console.log("Welcome to JS")
+// })()
+
+//ques22
+// (function fntn(a,b){
+//     console.log(a*b)
+
+// })(2,3);
+
+//ques23
+// (()=>{
+// console.log("hello arrow function")
+// })()
+
+
+//ques24
+// const counter = (function () {
+//     let count = 0; // private variable
+
+//     return {
+//         increment: function () {
+//             count++;
+//             console.log(count);
+//         },
+//         decrement: function () {
+//             count--;
+//             console.log(count);
+//         },
+//         getCount: function () {
+//             return count;
+//         }
+//     };
+// })();
+
+// counter.increment(); // 1
+// counter.increment(); // 2
+// counter.decrement(); // 1
+
+// console.log(counter.getCount()); // 1
+// console.log(counter.count); // undefined
+//ques25
+// const CounterModule = (function () {
+//     let count = 0; // private variable
+
+//     return {
+//         increment: function () {
+//             count++;
+//             console.log("Count:", count);
+//         },
+
+//         decrement: function () {
+//             count--;
+//             console.log("Count:", count);
+//         },
+
+//         reset: function () {
+//             count = 0;
+//             console.log("Count reset to:", count);
+//         }
+//     };
+// })();
+
+// // Usage
+// CounterModule.increment(); // Count: 1
+// CounterModule.increment(); // Count: 2
+// CounterModule.decrement(); // Count: 1
+// CounterModule.reset();     // Count reset to: 0
 
 // 26. 
 function add(a,b){
@@ -104,6 +222,70 @@ function calculate(a,b,operation){
 
 const result = calculate(2,4,add)
 console.log(result)
+
+// 27.
+function repeat(times, callback) {
+  for (let i = 1; i <= times; i++) {
+    callback();
+  }
+}
+
+function sayHello() {
+  console.log("Hello");
+}
+
+repeat(5, sayHello);
+
+// 28.
+function logger(level) {
+  return function (message) {
+    console.log(`[${level}] ${message}`);
+  };
+}
+
+const infoLogger = logger("INFO");
+
+infoLogger("User Logged In");
+
+// 29.
+
+function timer(callback) {
+  const start = Date.now();
+
+  callback();
+
+  const end = Date.now();
+  console.log(`Execution Time: ${end - start} ms`);
+}
+
+function greet() {
+  console.log("Hello World");
+}
+
+timer(greet);
+
+// 30. Create a function wrapper that counts how many times another function was called.
+
+function callCounter(fn) {
+  let count = 0;
+
+  return function () {
+    count++;
+    console.log(`Called ${count} times`);
+    fn();
+  };
+}
+
+function greet() {
+  console.log("Hello");
+}
+
+const countedGreet = callCounter(greet);
+
+countedGreet();
+countedGreet();
+countedGreet();
+
 
 
 
