@@ -1,3 +1,4 @@
+require("dotenv").config() // load .env before config/cloudinary reads process.env
 const express = require("express");
 const mongoose = require("mongoose");
 const User = require("./models/User");
@@ -7,9 +8,12 @@ const nodemailer = require("nodemailer");
 const { uploadImage } = require("./config/multer");
 const app = express();
 
-require("dotenv").config()
-
 app.use(express.json());
+// Express 5 leaves req.body undefined when no JSON body is sent
+app.use((req,res,next)=>{
+    if(req.body === undefined) req.body = {};
+    next()
+})
 
 
 
@@ -24,7 +28,8 @@ const transformer = nodemailer.createTransport({
 app.post("/api/auth/register",async(req,res)=>{
     try{
         const {name,email,password} = req.body;
-        const userExist = await User.findOne({email})
+        if(!name || !email || !password) return res.status(400).json({mss : "name, email and password are required"});
+        const userExist = await User.findOne({email : email.toLowerCase()})
         if(userExist) return res.status(400).json({mss : "Email already exist"});
         const hashPassword = await bcrypt.hash(password,10);
 
@@ -32,6 +37,9 @@ app.post("/api/auth/register",async(req,res)=>{
             name,email,password : hashPassword
         })
         const saveUser = await newUser.save()
+        const { password: _pw, ...userData } = saveUser.toObject();
+        // A failed welcome email should not turn a successful signup into a 500
+        try{
         await transformer.sendMail({
             from : "vivekgarg0605@gmail.com",
             to : email,
@@ -47,7 +55,10 @@ If you did not create this account, please contact our support team immediately.
 Best regards,  
 Team Support`
         })
-        return res.status(201).json({mss : "user Signup successfully",user : saveUser})
+        }catch(mailErr){
+            console.log("Welcome email failed:", mailErr.message)
+        }
+        return res.status(201).json({mss : "user Signup successfully",user : userData})
     }catch(err){
         return res.status(500).json({mss : "Error Occur from server",err})
     }
@@ -57,7 +68,8 @@ Team Support`
 app.post("/api/auth/login",async (req,res)=>{
     try{
         const {email,password} = req.body;
-        const userExist = await User.findOne({email})
+        if(!email || !password) return res.status(400).json({mss : "email and password are required"});
+        const userExist = await User.findOne({email : email.toLowerCase()})
         if(!userExist) return res.status(400).json({mss : "Email not exist"});
 
         const correctPassword = await bcrypt.compare(password,userExist.password)
@@ -69,7 +81,8 @@ app.post("/api/auth/login",async (req,res)=>{
             {expiresIn : "1d"}
         )
 
-        return res.status(200).json({mss : "user Login successfully",user : userExist,token})
+        const { password: _pw, ...userData } = userExist.toObject();
+        return res.status(200).json({mss : "user Login successfully",user : userData,token})
     }catch(err){
         return res.status(500).json({mss : "Error Occur from server",err})
     }
@@ -112,7 +125,7 @@ app.get("/api/auth/me",authMiddleware,async (req,res)=>{
 app.get("/api/users",async (req,res) => {
     try{ 
         const users = await User.find({},{password : 0})
-        return res.status(201).json({mss : "All user fetch successfully",users})
+        return res.status(200).json({mss : "All user fetch successfully",users})
     }catch(err){
         return res.status(500).json({mss : "server error",err})
     }
@@ -122,10 +135,11 @@ app.get("/api/users",async (req,res) => {
 app.get("/api/users/:id",async (req,res) => {
     try{ 
         const id = req.params.id;
+        if(!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({mss : "Invalid user id"})
         const user = await User.findById({_id : id},{password : 0});
 
-        if(!user) return res.status(401).json({mss : "User not found"})
-        return res.status(201).json({mss : "user fetch successfully",user})
+        if(!user) return res.status(404).json({mss : "User not found"})
+        return res.status(200).json({mss : "user fetch successfully",user})
     }catch(err){
         return res.status(500).json({mss : "server error",err})
     }
@@ -143,7 +157,7 @@ app.put("/api/users/:id",authMiddleware,async (req,res) => {
         const updateData = {};
 
         if (name) updateData.name = name;
-        if (email) updateData.email = email;
+        if (email) updateData.email = email.toLowerCase();
 
         if (password) {
             const hashPassword = await bcrypt.hash(password, 10);
@@ -152,7 +166,8 @@ app.put("/api/users/:id",authMiddleware,async (req,res) => {
 
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            updateData
+            updateData,
+            { new: true, runValidators: true, projection: { password: 0 } }
         );
 
         if (!updatedUser) {
@@ -195,7 +210,8 @@ app.delete("/api/users/:id", authMiddleware, async (req, res) => {
 app.post("/api/users/upload-profile",authMiddleware, uploadImage.single("image"), async (req, res) => {
 
   try {
-    const id = req.body.id
+    // Always update the logged-in user's own photo (req.body.id let anyone change any user's photo)
+    const id = req.user.id
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
@@ -203,7 +219,7 @@ app.post("/api/users/upload-profile",authMiddleware, uploadImage.single("image")
     const user = await User.findByIdAndUpdate(
       id,
       { profileImg: req.file.path },
-      { new: true }
+      { new: true, projection: { password: 0 } }
     );
     res.status(200).json({
       message: "Profile Photo uploaded",
@@ -222,4 +238,7 @@ mongoose.connect(process.env.db_url).then(()=>{
     app.listen(PORT,()=>{
         console.log("Server on running on Port ",PORT)
     })
+}).catch((err)=>{
+    console.log("Database connection failed:", err.message)
+    process.exit(1)
 })
